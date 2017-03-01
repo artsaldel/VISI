@@ -1,0 +1,9 @@
+<component name="libraryTable">
+  <library name="ISI">
+    <CLASSES>
+      <root url="jar://$PROJECT_DIR$/dist/ISI.jar!/" />
+    </CLASSES>
+    <JAVADOC />
+    <SOURCES />
+  </library>
+</component>

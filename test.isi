@@ -1,0 +1,20 @@
+sum r1, r1, #1
+sum r3, r1, r1 
+carp r3,0x1
+tag3:
+sum r3, r3, r1
+sum r3, r3, r1
+sum r3, r3, r1
+tag1:
+sum r3, r3, #5
+sum r1, r3, r1
+sum r3, r1, r1
+sum r1, r3, r1
+tag4:
+sum r3, r1, #6
+carp r3,0x10
+obtp r7,0x10
+tag2:
+sum r3, r1, #6
+comp r3, r3
+sal tag3

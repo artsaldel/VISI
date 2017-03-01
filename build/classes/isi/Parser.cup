@@ -1,0 +1,160 @@
+package isi;
+
+import java_cup.runtime.*;
+import java.io.FileReader;
+import javax.swing.JOptionPane;
+import Translator.*;
+import ARManalyzers.ModuloError;
+
+/**************************************************************************
+****************************CODIGO DE ACCION*******************************
+***************************************************************************/
+
+action code {:
+    
+:}
+
+parser code {:
+    public static int PC = -4;
+    public static boolean isWrite = false;
+    public static boolean isError = false;
+    public static String entryPath = "";
+
+    public void report_error(String message, Object info) {
+        StringBuilder m = new StringBuilder("Error");
+        if (info instanceof java_cup.runtime.Symbol) {
+            java_cup.runtime.Symbol s = ((java_cup.runtime.Symbol) info);
+            if (s.left >= 0) {                
+                m.append(" in line "+(s.left+1));
+                if (s.right >= 0)
+                    m.append(", column "+(s.right+1));
+            }
+        }
+        m.append(" : "+message);
+        ModuloError.insertError(m.toString());
+        //System.err.println(m);
+        //JOptionPane.showMessageDialog(null,m);
+    }
+
+    public void report_fatal_error(String message, Object info) {
+        report_error(message, info);
+        ModuloError.insertError("Mensaje: " + message + "\n Info: " + info);
+        //System.exit(1);
+    }
+
+    public static void main(String[] args, boolean isWri){
+        try {
+            BinaryOutput.DestroyFile();
+            BinaryOutput.CreateFile();
+            isWrite = isWri;
+            parser asin = new parser(
+                    new LexicalAnalyzer( new FileReader(args[0])));
+            if (!isWri)
+                asin.PC = -4;
+            Object result = asin.parse().value;
+            if (isWri){
+                ModuloError.insertError("*** ENSAMBLAJE FINALIZADO ***");
+                BranchTranslator.getBranchTranslator().ResetLabelList();
+            }
+
+        } catch (Exception ex) {
+            ModuloError.insertError(ex.toString());
+            //ex.printStackTrace();
+        }
+    }
+:};
+
+
+/**************************************************************************
+********************************TERMINALES*********************************
+***************************************************************************/
+
+terminal   SUM, RES, MUL, DIV, MOD, COMP, AND, OR, XOR, NAND, NOR
+           CORI, CORD, CAR, CARP, OBT, OBTP, SAL, SALI, SALNI, SALM
+
+terminal REGISTER, COMA, SEMICOLON, TEXT, NEWLINE, OPENBRACKET,
+         CLOSEBRACKET, NUMBER, ADDRESS, LESS;
+
+
+/**************************************************************************
+******************************NO TERMINALES********************************
+***************************************************************************/
+
+non terminal Object Program, Instruction, Instructions, InstructionsAux;
+
+start with Program;
+
+/**************************************************************************
+*********************************GRAMATICA*********************************
+***************************************************************************/
+
+Program::= Instructions
+                    {: 
+                    :}
+                    ;
+
+Instructions::= Instruction InstructionsAux
+                    {:
+                    if (!isWrite){
+                        PC = -4;
+                        parser instParser = new parser ();
+                        String [] archive = {entryPath}; 
+                        parser.main(archive, true);
+                    }
+                    :}
+                    ;
+
+InstructionsAux::= Instruction InstructionsAux 
+                    {:
+                    
+                    :}
+                    | /*NOTHING*/
+                    {:
+                    :}
+                    ;
+
+
+Instruction::= 
+
+/*********************LABEL************************/
+                TEXT:a 
+                    {:
+                        if (!isWrite)
+                            BranchTranslator.getBranchTranslator().insertLabel(a.toString(), PC + 4);
+                    :}
+
+/*********************ADD INSTRUCTION************************/
+
+              | SUM REGISTER:a COMA REGISTER:b COMA REGISTER:c 
+                                {:
+                                    PC += 4; 
+                                    if (isWrite && !isError){
+                                    DataTranslator.getDataTranslator().setCond("1110");
+                                    DataTranslator.getDataTranslator().setOp("00");
+                                    DataTranslator.getDataTranslator().setI("0");
+                                    DataTranslator.getDataTranslator().setCmd("0100");
+                                    DataTranslator.getDataTranslator().setS("0");
+                                    DataTranslator.getDataTranslator().setRn(b.toString().split("r")[1]);
+                                    DataTranslator.getDataTranslator().setRd(a.toString().split("r")[1]);
+                                    DataTranslator.getDataTranslator().setShamt5("0");
+                                    DataTranslator.getDataTranslator().setSh("00");
+                                    DataTranslator.getDataTranslator().setRm(c.toString().split("r")[1]);
+                                    DataTranslator.getDataTranslator().writeInstructionRegister();
+                                    }
+                                :}
+              | SUM REGISTER:a COMA REGISTER:b COMA NUMBER:c 
+                                {:
+                                    PC += 4;
+                                    if (isWrite && !isError){
+                                    DataTranslator.getDataTranslator().setCond("1110");
+                                    DataTranslator.getDataTranslator().setOp("00");
+                                    DataTranslator.getDataTranslator().setI("1");
+                                    DataTranslator.getDataTranslator().setCmd("0100");
+                                    DataTranslator.getDataTranslator().setS("0");
+                                    DataTranslator.getDataTranslator().setRn(b.toString().split("r")[1]);
+                                    DataTranslator.getDataTranslator().setRd(a.toString().split("r")[1]);
+                                    DataTranslator.getDataTranslator().setImm8(c.toString().split("#")[1]);
+                                    DataTranslator.getDataTranslator().writeInstructionImmediate();
+                                    }DataTranslator.
+                                :}
+              
