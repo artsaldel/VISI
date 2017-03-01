@@ -24,7 +24,7 @@ import java.net.URISyntaxException;
 
 /**
  *
- * @author cesar
+ * @author cesar solis
  */
 public class mainFrame extends javax.swing.JFrame {
 
